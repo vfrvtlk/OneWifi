@@ -107,7 +107,16 @@ static whix_data_t *get_whix_data()
     return &wifi_app->data.u.whix;
 }
 
-static inline char *to_sta_key    (mac_addr_t mac, sta_key_t key)
+typedef char sta_vap_key_t[STA_KEY_LEN+3];
+
+static inline char *to_sta_vap_key    (mac_addr_t mac, sta_vap_key_t key, unsigned vap_index)
+{
+    snprintf(key, STA_KEY_LEN+3, "%02x:%02x:%02x:%02x:%02x:%02x_%02u",
+            mac[0], mac[1], mac[2], mac[3], mac[4], mac[5], vap_index);
+    return (char *)key;
+}
+
+static inline char *to_sta_key    (mac_addr_t mac, sta_vap_key_t key)
 {
     snprintf(key, STA_KEY_LEN, "%02x:%02x:%02x:%02x:%02x:%02x",
             mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
@@ -894,7 +903,7 @@ static void upload_mld_telemetry_data() {
 int upload_client_telemetry_data(wifi_app_t *app, unsigned int num_devs, unsigned int vap_index,
     sta_data_t *sta)
 {
-    sta_key_t sta_key;
+    sta_vap_key_t sta_key;
     char buff[MAX_BUFF_SIZE];
     char telemetryBuff[MAX_BUFF_SIZE];
     char tmp[128];
@@ -1302,7 +1311,7 @@ int upload_client_telemetry_data(wifi_app_t *app, unsigned int num_devs, unsigne
         memset(buff, 0, MAX_BUFF_SIZE);
         snprintf(buff, MAX_BUFF_SIZE - 1, "%s WIFI_BYTESSENTCLIENTS_%d:", tmp, vap_index + 1);
         for (i = 0; i < num_devs; i++) {
-            to_sta_key(sta[i].sta_mac, sta_key);
+            to_sta_vap_key(sta[i].sta_mac, sta_key, vap_index);
             dev_stats_last = (wifi_associated_dev3_t *)hash_map_get(last_stats_map, sta_key);
             if (dev_stats_last == NULL) {
                 dev_stats_last = (wifi_associated_dev3_t *)calloc(sizeof(wifi_associated_dev3_t),
@@ -1332,7 +1341,7 @@ int upload_client_telemetry_data(wifi_app_t *app, unsigned int num_devs, unsigne
         snprintf(buff, MAX_BUFF_SIZE - 1, "%s WIFI_BYTESRECEIVEDCLIENTS_%d:", tmp, vap_index + 1);
         for (i = 0; i < num_devs; i++) {
             if (sta[i].dev_stats.cli_Active == true) {
-                to_sta_key(sta[i].sta_mac, sta_key);
+                to_sta_vap_key(sta[i].sta_mac, sta_key, vap_index);
                 dev_stats_last = (wifi_associated_dev3_t *)hash_map_get(last_stats_map, sta_key);
                 if (dev_stats_last == NULL) {
                     wifi_util_error_print(WIFI_APPS, "%s:%d Hash map get failed\n", __func__,
@@ -1357,7 +1366,7 @@ int upload_client_telemetry_data(wifi_app_t *app, unsigned int num_devs, unsigne
         snprintf(buff, MAX_BUFF_SIZE - 1, "%s WIFI_PACKETSSENTCLIENTS_%d:", tmp, vap_index + 1);
         for (i = 0; i < num_devs; i++) {
             if (sta[i].dev_stats.cli_Active == true) {
-                to_sta_key(sta[i].sta_mac, sta_key);
+                to_sta_vap_key(sta[i].sta_mac, sta_key, vap_index);
                 dev_stats_last = (wifi_associated_dev3_t *)hash_map_get(last_stats_map, sta_key);
                 if (dev_stats_last == NULL) {
                     wifi_util_error_print(WIFI_APPS, "%s:%d Hash map get failed\n", __func__,
@@ -1390,7 +1399,7 @@ int upload_client_telemetry_data(wifi_app_t *app, unsigned int num_devs, unsigne
         snprintf(buff, MAX_BUFF_SIZE - 1, "%s WIFI_PACKETSRECEIVEDCLIENTS_%d:", tmp, vap_index + 1);
         for (i = 0; i < num_devs; i++) {
             if (sta[i].dev_stats.cli_Active == true) {
-                to_sta_key(sta[i].sta_mac, sta_key);
+                to_sta_vap_key(sta[i].sta_mac, sta_key, vap_index);
                 dev_stats_last = (wifi_associated_dev3_t *)hash_map_get(last_stats_map, sta_key);
                 if (dev_stats_last == NULL) {
                     wifi_util_error_print(WIFI_APPS, "%s:%d Hash map get failed\n", __func__,
@@ -1415,7 +1424,7 @@ int upload_client_telemetry_data(wifi_app_t *app, unsigned int num_devs, unsigne
         snprintf(buff, MAX_BUFF_SIZE - 1, "%s WIFI_ERRORSSENT_%d:", tmp, vap_index + 1);
         for (i = 0; i < num_devs; i++) {
             if (sta[i].dev_stats.cli_Active == true) {
-                to_sta_key(sta[i].sta_mac, sta_key);
+                to_sta_vap_key(sta[i].sta_mac, sta_key, vap_index);
                 dev_stats_last = (wifi_associated_dev3_t *)hash_map_get(last_stats_map, sta_key);
                 if (dev_stats_last == NULL) {
                     wifi_util_error_print(WIFI_APPS, "%s:%d Hash map get failed\n", __func__,
@@ -1448,7 +1457,7 @@ int upload_client_telemetry_data(wifi_app_t *app, unsigned int num_devs, unsigne
         snprintf(buff, MAX_BUFF_SIZE - 1, "%s WIFI_RETRANSCOUNT_%d:", tmp, vap_index + 1);
         for (i = 0; i < num_devs; i++) {
             if (sta[i].dev_stats.cli_Active == true) {
-                to_sta_key(sta[i].sta_mac, sta_key);
+                to_sta_vap_key(sta[i].sta_mac, sta_key, vap_index);
                 dev_stats_last = (wifi_associated_dev3_t *)hash_map_get(last_stats_map, sta_key);
                 if (dev_stats_last == NULL) {
                     wifi_util_error_print(WIFI_APPS, "%s:%d Hash map get failed\n", __func__,
@@ -1480,7 +1489,7 @@ int upload_client_telemetry_data(wifi_app_t *app, unsigned int num_devs, unsigne
         snprintf(buff, MAX_BUFF_SIZE - 1, "%s WIFI_FAILEDRETRANSCOUNT_%d:", tmp, vap_index + 1);
         for (i = 0; i < num_devs; i++) {
             if (sta[i].dev_stats.cli_Active == true) {
-                to_sta_key(sta[i].sta_mac, sta_key);
+                to_sta_vap_key(sta[i].sta_mac, sta_key, vap_index);
                 dev_stats_last = (wifi_associated_dev3_t *)hash_map_get(last_stats_map, sta_key);
                 if (dev_stats_last == NULL) {
                     wifi_util_error_print(WIFI_APPS, "%s:%d Hash map get failed\n", __func__,
@@ -1504,7 +1513,7 @@ int upload_client_telemetry_data(wifi_app_t *app, unsigned int num_devs, unsigne
         snprintf(buff, MAX_BUFF_SIZE - 1, "%s WIFI_RETRYCOUNT_%d:", tmp, vap_index + 1);
         for (i = 0; i < num_devs; i++) {
             if (sta[i].dev_stats.cli_Active == true) {
-                to_sta_key(sta[i].sta_mac, sta_key);
+                to_sta_vap_key(sta[i].sta_mac, sta_key, vap_index);
                 dev_stats_last = (wifi_associated_dev3_t *)hash_map_get(last_stats_map, sta_key);
                 if (dev_stats_last == NULL) {
                     wifi_util_error_print(WIFI_APPS, "%s:%d Hash map get failed\n", __func__,
@@ -1528,7 +1537,7 @@ int upload_client_telemetry_data(wifi_app_t *app, unsigned int num_devs, unsigne
         snprintf(buff, MAX_BUFF_SIZE - 1, "%s WIFI_MULTIPLERETRYCOUNT_%d:", tmp, vap_index + 1);
         for (i = 0; i < num_devs; i++) {
             if (sta[i].dev_stats.cli_Active == true) {
-                to_sta_key(sta[i].sta_mac, sta_key);
+                to_sta_vap_key(sta[i].sta_mac, sta_key, vap_index);
                 dev_stats_last = (wifi_associated_dev3_t *)hash_map_get(last_stats_map, sta_key);
                 if (dev_stats_last == NULL) {
                     wifi_util_error_print(WIFI_APPS, "%s:%d Hash map get failed\n", __func__,
@@ -1549,7 +1558,7 @@ int upload_client_telemetry_data(wifi_app_t *app, unsigned int num_devs, unsigne
 
     if (stflag[vap_index]) {
         for (i = 0; i < num_devs; i++) {
-            to_sta_key(sta[i].sta_mac, sta_key);
+            to_sta_vap_key(sta[i].sta_mac, sta_key, vap_index);
             dev_stats_last = (wifi_associated_dev3_t *)hash_map_get(last_stats_map, sta_key);
             if (dev_stats_last != NULL) {
                 memcpy(dev_stats_last, &sta[i].dev_stats, sizeof(wifi_associated_dev3_t));
